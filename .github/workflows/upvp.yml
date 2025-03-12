@@ -1,4 +1,4 @@
-name: Update VPN Data
+name: Update VP Data
 
 on:
   schedule:
@@ -16,7 +16,7 @@ jobs:
           python-version: "3.x"
       - name: Install dependencies
         run: pip install requests
-      - name: Fetch and update VPN data
+      - name: Fetch and update VP data
         run: |
           python -c "import requests; r = requests.get('http://www.vpngate.net/api/iphone/'); open('g.csv', 'w', encoding='utf-8').write(r.text)"
       - name: Commit changes
