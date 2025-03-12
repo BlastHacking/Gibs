@@ -1,0 +1,28 @@
+name: Update VPN Data
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # هر روز ساعت 00:00 UTC
+  workflow_dispatch:  # امکان اجرای دستی
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: pip install requests
+      - name: Fetch and update VPN data
+        run: |
+          python -c "import requests; r = requests.get('http://www.vpngate.net/api/iphone/'); open('g.csv', 'w', encoding='utf-8').write(r.text)"
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add g.csv
+          git commit -m "آپدیت خودکار g.csv از VPN Gate" || echo "No changes to commit"
+          git push
