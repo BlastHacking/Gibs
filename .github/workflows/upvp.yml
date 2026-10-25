@@ -2,23 +2,62 @@ name: Update VP Data
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # هر روز ساعت 00:00 UTC
-  workflow_dispatch:  # امکان اجرای دستی
+    - cron: "0 0 * * *"   # هر روز ساعت ۰۰:۰۰ UTC
+  workflow_dispatch:
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+
       - name: Install dependencies
         run: pip install requests
+
       - name: Fetch and update VP data
         run: |
-          python -c "import requests; r = requests.get('http://www.vpngate.net/api/iphone/'); open('g.csv', 'w', encoding='utf-8').write(r.text)"
+          python - <<'EOF'
+          import requests
+          import sys
+
+          urls = [
+              "https://cdn.jsdelivr.net/gh/GeorgeXie2333/vpngate-list-mirror@latest/data/vpngate.csv",
+              "https://raw.githubusercontent.com/GeorgeXie2333/vpngate-list-mirror/main/data/vpngate.csv",
+              "https://www.vpngate.net/api/iphone/",
+              "http://www.vpngate.net/api/iphone/",
+          ]
+
+          headers = {
+              "User-Agent": "Mozilla/5.0 (compatible; VP-Updater/1.0)"
+          }
+
+          content = None
+          for url in urls:
+              try:
+                  print(f"Trying: {url}")
+                  r = requests.get(url, headers=headers, timeout=30)
+                  r.raise_for_status()
+                  if len(r.text) > 1000 and ("HostName" in r.text or "vpn_servers" in r.text):
+                      content = r.text
+                      print(f"Success from: {url}")
+                      break
+              except Exception as e:
+                  print(f"Failed: {e}")
+
+          if not content:
+              print("All sources failed!")
+              sys.exit(1)
+
+          with open("g.csv", "w", encoding="utf-8") as f:
+              f.write(content)
+          print("g.csv updated successfully")
+          EOF
+
       - name: Commit changes
         run: |
           git config user.name "GitHub Action"
